@@ -23,29 +23,23 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 .global gameLoop
 
 .section .game.data
+.equ    vgaTextStart, 0xB8000               #start VGA text memory
+.equ    vgaTextEnd, 0xB8FA0                 #vgaTextStart + 4000 = VgaTextEnd (80x25 characters, occupying 2 bytes of memory so 80 x 25 x 2 = 4000 bytes)
 
 .section .game.text
 
+
 gameInit:
-	ret
+	movq    $33333, %rdi            		#generate interupt every 33,333 ms, aka 30Hz
+    call    setTimer                		#call setTimer to load it to 30 Hz
+    
+	movq    $vgaTextStart, %rdi         	#start of graphics memory
+	clearScreen:
+		movb $0x0,  (%rdi)     			    # write nothing to the character cell
+		movb $0x0 , 1(%rdi)    			    # write the background attribute BLACK to the next byte
+		addq $2, %rdi          				# move to the next character, 2 bytes
+		cmpq $vgaTextEnd, %rdi     			# check if at the end of VGA text memory
+		jl clearScreen            			
 
 gameLoop:
-	# Check if a key has been pressed
-	call	readKeyCode
-	cmpq	$0, %rax
-	je		1f
-	# If so, print a 'Y'
-	movb	$'Y', %dl
-	jmp		2f
-
-1:
-	# Otherwise, print a 'N'
-	movb	$'N', %dl
-
-2:
-	movq	$0, %rdi
-	movq	$0, %rsi
-	movb	$0x0f, %cl
-	call	putChar
-
 	ret
