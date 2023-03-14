@@ -25,12 +25,13 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 .section .game.data
 	#variables
 
-	SNAKEARRAY_X: 	.space 1000         # memory space for the number table
-	SNAKEARRAY_Y: 	.space 1000         # memory space for the number table
+	SNAKEARRAY_X: 	.space 100         # memory space for the number table
+	SNAKEARRAY_Y: 	.space 100         # memory space for the number table
 
-
-	appleX:			.quad	16
-	appleY:			.quad 	8
+	playerX:		.quad	40
+	playerY:		.quad	12
+	appleX:			.quad	159
+	appleY:			.quad 	23
 	direction:		.quad	4
 	snakeLenght:	.quad	1
 
@@ -59,53 +60,125 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 	.equ    right, 0x4D                     	# right arrow scan code
 	.equ    down, 0x50                      	# down arrow scan code
 
-	playerX:		.byte	0x40
-	playerY:		.byte	100
+
 
 gameInit:
 	movq    $33333, %rdi            			# generate interupt every 33,333 ms, aka 30Hz
     call    setTimer                			# call setTimer to load 30 Hz
     
-	movq    $VIDMEM, %rdi         				# start of VGA text memory
-	clearScreen:
-		movb $0x0,  (%rdi)     			    	# write nothing to the character cell
-		movb $0x0 , 1(%rdi)    			   	 	# write the background attribute BLACK to the next byte
-		addq $2, %rdi          					# move to the next character, 2 bytes
-		cmpq $VIDMEM_END, %rdi     				# check if at the end of VGA text memory
-		jl clearScreen
-
 	snakeInit:
 		#init snake array
-		movq    $0, %rbx            # initialize 'i' to 0.
-		head:
-			leaq    SNAKEARRAY_X(%rip), %rax # load address of NUMBERS table into rax
-			leaq    SNAKEARRAY_Y(%rip), %rcx # load address of NUMBERS table into rcx
+		movq	$0, %rbx
+		leaq    SNAKEARRAY_X(%rip), %rax   # load address of SNAKEARRAY_X table into rax
+		leaq    SNAKEARRAY_Y(%rip), %rcx   # load address of SNAKEARRAY_Y table into rcx
 
-			movb	playerX, %sil
-			movb    %sil, (%rax, %rbx)
+		movq	playerX, %rsi
+		movq    %rsi, (%rax, %rbx)
 
-			movb	playerY, %sil
-			movb    %sil, (%rcx, %rbx)
-
-			movq	$0, %rdi
-			movb	(%rcx, %rbx), %dl
-			movq	$0, %rsi
-			movb	$0x0f, %cl
-			call	putChar
-
-
-			incq    %rbx                # increment 'i' 
-		body:
-			movb    $0, (%rax, %rbx)    # set number table entry 'i' to '0'
-			movb    $0, (%rcx, %rbx)    # set number table entry 'i' to '0'
-
-			incq    %rbx                # increment 'i'                      
-			cmpq    $1000, %rbx         # while 'i' < 1000                   
-			jl      body               	# go to start of loop1
-
-	
+		movq	playerY, %rsi
+		movq    %rsi, (%rcx, %rbx)
 
 gameLoop:
+	#clear screen every loop
+	movq    $VIDMEM, %rdi         					# start of VGA text memory
+	clearScreen:
+		movw 	$BGCOLOR, (%rdi)     			    
+		addq 	$2, %rdi          					# move to the next character, 2 bytes
+		cmpq 	$VIDMEM_END, %rdi     				# check if at the end of VGA text memory
+		jl 		clearScreen
+
+	movq    $VIDMEM, %rdi         					# start of VGA text memory
+	drawSnake:	
+		movq	$0, %rbx
+		movq	snakeLenght, %rcx
+
+		leaq    SNAKEARRAY_X(%rip), %r15   # load address of SNAKEARRAY_X table into r15
+		leaq    SNAKEARRAY_Y(%rip), %r14   # load address of SNAKEARRAY_Y table into r14
+
+		movq	(%r15, %rbx), %r13			#X
+		movq	(%r14, %rbx), %r12			#Y
+
+		movq	$160, %rax
+		imul	%r12
+		addq	%rax, %rdi
+
+		movq	$2, %rax
+		imul	%r13
+		addq	%rax, %rdi
+
+		movw 	$SNAKECOLOR, (%rdi)
+		movq    $VIDMEM, %rdi  
+
+		addq	$1, %rbx
+		subq	$1, %rcx
+
+		cmpq	$0, %rcx
+		jg		drawSnake
+	drawApple:
+		movq    appleX, %r13   # load address of SNAKEARRAY_X table into r15
+		movq    appleY, %r12   # load address of SNAKEARRAY_X table into r15
+
+		movq	$160, %rax
+		imul	%r12
+		addq	%rax, %rdi
+
+		movq	$2, %rax
+		imul	%r13
+		addq	%rax, %rdi
+
+		movw 	$APPLECCOLOR, (%rdi)
+
+		
+
+
+
+
+
+		// movq 	$0, %rbx				# array counter
+		// movq	snakeLenght, %rcx		# loop counter
+		
+		// leaq    SNAKEARRAY_X(%rip), %r15   # load address of SNAKEARRAY_X table into rax
+		// leaq    SNAKEARRAY_Y(%rip), %r14   # load address of SNAKEARRAY_Y table into rdx
+		// snakeLoop:
+
+
+
+
+
+		// 	movq	$80, %rax
+		// 	movq	(%r14, %rbx), %r8
+		// 	imul	%r8;
+
+		// 	movq	%rax, %r9
+
+		// 	movq	$2, %rax
+		// 	movq	(%r15, %rbx), %r8
+		// 	imul	%r8;
+
+		// 	addq	%rax, %r9
+
+		// 	movq	%r9, (%rdi)
+		// 	addq	$2, %rbx
+		// 	decq	%rcx
+
+		// 	cmpq 	$0, %rcx     				# check if at the end of VGA text memory
+		// 	jg 		snakeLoop
+
+		
 	
 
 	ret
+
+
+
+
+
+	// imul. SRC RDX:RAX = RAX * SRC
+
+	// movq    $VIDMEM, %rdi         				# start of VGA text memory
+	// clearScreen:
+	// 	movb $0x0,  (%rdi)     			    	# write nothing to the character cell
+	// 	movb $0x0 , 1(%rdi)    			   	 	# write the background attribute BLACK to the next byte
+	// 	addq $2, %rdi          					# move to the next character, 2 bytes
+	// 	cmpq $VIDMEM_END, %rdi     				# check if at the end of VGA text memory
+	// 	jl clearScreen
