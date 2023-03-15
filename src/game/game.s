@@ -32,8 +32,8 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 	playerY:		.quad	12
 	appleX:			.quad	159
 	appleY:			.quad 	23
-	direction:		.quad	4
-	snakeLenght:	.quad	1
+	direction:		.quad	4			#could be byte?
+	snakeLenght:	.quad	2
 
 
 	score:          .quad 0x0               #initialize a score in memory to 0.
@@ -56,9 +56,16 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 	.equ	TIMER, 0x04C						# counter
 	##############################
 
-	.equ    left, 0x4B                      	# left arrow scan code
-	.equ    right, 0x4D                     	# right arrow scan code
-	.equ    down, 0x50                      	# down arrow scan code
+	.equ	upCode, 0x48							# up arrow scan code
+	.equ    leftCode, 0x4B                      	# left arrow scan code
+	.equ    rightCode, 0x4D                     	# right arrow scan code
+	.equ    downCode, 0x50                      	# down arrow scan code
+
+
+	.equ	up, 0x0
+	.equ    left, 0x1                      	# left arrow scan code
+	.equ    right, 0x2                     	# right arrow scan code
+	.equ    down, 0x3                      	# down arrow scan code
 
 
 
@@ -78,6 +85,14 @@ gameInit:
 		movq	playerY, %rsi
 		movq    %rsi, (%rcx, %rbx)
 
+		addq	$8, %rbx
+
+		movq	$39, %rsi
+		movq    %rsi, (%rax, %rbx)
+
+		movq	$12, %rsi
+		movq    %rsi, (%rcx, %rbx)
+
 gameLoop:
 	#clear screen every loop
 	movq    $VIDMEM, %rdi         					# start of VGA text memory
@@ -95,6 +110,7 @@ gameLoop:
 		leaq    SNAKEARRAY_X(%rip), %r15   # load address of SNAKEARRAY_X table into r15
 		leaq    SNAKEARRAY_Y(%rip), %r14   # load address of SNAKEARRAY_Y table into r14
 
+		drawSnakeLoop:
 		movq	(%r15, %rbx), %r13			#X
 		movq	(%r14, %rbx), %r12			#Y
 
@@ -109,11 +125,11 @@ gameLoop:
 		movw 	$SNAKECOLOR, (%rdi)
 		movq    $VIDMEM, %rdi  
 
-		addq	$1, %rbx
+		addq	$8, %rbx
 		subq	$1, %rcx
 
 		cmpq	$0, %rcx
-		jg		drawSnake
+		jg		drawSnakeLoop
 	drawApple:
 		movq    appleX, %r13   # load address of SNAKEARRAY_X table into r15
 		movq    appleY, %r12   # load address of SNAKEARRAY_X table into r15
@@ -127,58 +143,19 @@ gameLoop:
 		addq	%rax, %rdi
 
 		movw 	$APPLECCOLOR, (%rdi)
-
-		
-
-
-
-
-
-		// movq 	$0, %rbx				# array counter
-		// movq	snakeLenght, %rcx		# loop counter
-		
-		// leaq    SNAKEARRAY_X(%rip), %r15   # load address of SNAKEARRAY_X table into rax
-		// leaq    SNAKEARRAY_Y(%rip), %r14   # load address of SNAKEARRAY_Y table into rdx
-		// snakeLoop:
-
-
-
-
-
-		// 	movq	$80, %rax
-		// 	movq	(%r14, %rbx), %r8
-		// 	imul	%r8;
-
-		// 	movq	%rax, %r9
-
-		// 	movq	$2, %rax
-		// 	movq	(%r15, %rbx), %r8
-		// 	imul	%r8;
-
-		// 	addq	%rax, %r9
-
-		// 	movq	%r9, (%rdi)
-		// 	addq	$2, %rbx
-		// 	decq	%rcx
-
-		// 	cmpq 	$0, %rcx     				# check if at the end of VGA text memory
-		// 	jg 		snakeLoop
-
-		
 	
+	moveSnake:
+		// movq	direction, %r15		#move current direction to r15
+             
+        // cmpq    $left, %r15
+        // je      loopProcessLeft
+        // cmpq	$right, %r15
+        // je      loopProcessRight
+        // cmpq    $down, %r15
+        // je      loopProcessDown
+
+
+
+		
 
 	ret
-
-
-
-
-
-	// imul. SRC RDX:RAX = RAX * SRC
-
-	// movq    $VIDMEM, %rdi         				# start of VGA text memory
-	// clearScreen:
-	// 	movb $0x0,  (%rdi)     			    	# write nothing to the character cell
-	// 	movb $0x0 , 1(%rdi)    			   	 	# write the background attribute BLACK to the next byte
-	// 	addq $2, %rdi          					# move to the next character, 2 bytes
-	// 	cmpq $VIDMEM_END, %rdi     				# check if at the end of VGA text memory
-	// 	jl clearScreen
