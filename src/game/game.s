@@ -32,8 +32,8 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 	playerY:		.quad	12
 	appleX:			.quad	159
 	appleY:			.quad 	23
-	direction:		.quad	4			#could be byte?
-	snakeLenght:	.quad	2
+	direction:		.quad	1			#could be byte?
+	snakeLenght:	.quad	1
 
 
 	score:          .quad 0x0               #initialize a score in memory to 0.
@@ -70,7 +70,7 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 
 
 gameInit:
-	movq    $33333, %rdi            			# generate interupt every 33,333 ms, aka 30Hz
+	movq    $60000, %rdi            			# generate interupt every 33,333 ms, aka 30Hz
     call    setTimer                			# call setTimer to load 30 Hz
     
 	snakeInit:
@@ -85,14 +85,6 @@ gameInit:
 		movq	playerY, %rsi
 		movq    %rsi, (%rcx, %rbx)
 
-		addq	$8, %rbx
-
-		movq	$39, %rsi
-		movq    %rsi, (%rax, %rbx)
-
-		movq	$12, %rsi
-		movq    %rsi, (%rcx, %rbx)
-
 gameLoop:
 	#clear screen every loop
 	movq    $VIDMEM, %rdi         					# start of VGA text memory
@@ -104,11 +96,11 @@ gameLoop:
 
 	movq    $VIDMEM, %rdi         					# start of VGA text memory
 	drawSnake:	
-		movq	$0, %rbx
-		movq	snakeLenght, %rcx
+		movq	$0, %rbx					# array counter
+		movq	snakeLenght, %rcx			# loop counter
 
-		leaq    SNAKEARRAY_X(%rip), %r15   # load address of SNAKEARRAY_X table into r15
-		leaq    SNAKEARRAY_Y(%rip), %r14   # load address of SNAKEARRAY_Y table into r14
+		leaq    SNAKEARRAY_X(%rip), %r15   	# load address of SNAKEARRAY_X table into r15
+		leaq    SNAKEARRAY_Y(%rip), %r14   	# load address of SNAKEARRAY_Y table into r14
 
 		drawSnakeLoop:
 		movq	(%r15, %rbx), %r13			#X
@@ -123,16 +115,16 @@ gameLoop:
 		addq	%rax, %rdi
 
 		movw 	$SNAKECOLOR, (%rdi)
-		movq    $VIDMEM, %rdi  
+		movq    $VIDMEM, %rdi  				# reload vid mem
 
-		addq	$8, %rbx
-		subq	$1, %rcx
+		addq	$8, %rbx					# skip 8 bytes
+		subq	$1, %rcx					
 
 		cmpq	$0, %rcx
 		jg		drawSnakeLoop
 	drawApple:
-		movq    appleX, %r13   # load address of SNAKEARRAY_X table into r15
-		movq    appleY, %r12   # load address of SNAKEARRAY_X table into r15
+		movq    appleX, %r13   # load address of appleX table into r15
+		movq    appleY, %r12   # load address of appleY table into r15
 
 		movq	$160, %rax
 		imul	%r12
@@ -145,17 +137,68 @@ gameLoop:
 		movw 	$APPLECCOLOR, (%rdi)
 	
 	moveSnake:
-		// movq	direction, %r15		#move current direction to r15
+		movq	direction, %r15		# move current direction to r15
              
-        // cmpq    $left, %r15
-        // je      loopProcessLeft
-        // cmpq	$right, %r15
-        // je      loopProcessRight
-        // cmpq    $down, %r15
-        // je      loopProcessDown
+		cmpq    $up, %r15
+        je      processUp	 
+        cmpq    $left, %r15
+        je      processLeft
+        cmpq	$right, %r15
+        je      processRight
+        cmpq    $down, %r15
+        je      processDown
 
+		jmp 	updateSnake		
 
+		processUp:
+			subq	$1, playerY			# move UP 1 row
+			jmp		updateSnake
+		processDown:
+			addq	$1, playerY			# move DOWN 1 row
+			jmp		updateSnake
+		processLeft:
+			subq	$1, playerX			# move LEFT 1 col
+			jmp		updateSnake
+		processRight:
+			addq	$1, playerY			# move RIGHT 1 col
+			jmp		updateSnake
+
+		updateSnake:							# update snake based on player movemnet
+			movq	$8, %rax
+			movq	snakeLenght, %rcx			
+			imul	%rcx						# each slot in the array is 8 bytes
+
+			movq	%rax, %rbx					# array counter
+			leaq    SNAKEARRAY_X(%rip), %r15   	# load address of SNAKEARRAY_X table into r15
+			leaq    SNAKEARRAY_Y(%rip), %r14   	# load address of SNAKEARRAY_Y table into r14
+
+			updateSnakeBody:
+				movq	%rbx, %r13
+				subq	$8, %r13
+
+				movq	(%r15, %r13), %rax		#X
+				movq	%rax,(%r15, %rbx)		
+
+				movq	(%r14, %r13), %rax		#Y
+				movq	%rax,(%r15, %rbx)			
+
+				subq	$8, %rbx
+
+				cmpq	$0, %rbx
+				jg		updateSnakeBody
+
+			updateSnakeHead:
+				movq	$0, %rbx
+				leaq    SNAKEARRAY_X(%rip), %rax   # load address of SNAKEARRAY_X table into rax
+				leaq    SNAKEARRAY_Y(%rip), %rcx   # load address of SNAKEARRAY_Y table into rcx
+
+				movq	playerX, %rsi
+				movq    %rsi, (%rax, %rbx)
+
+				movq	playerY, %rsi
+				movq    %rsi, (%rcx, %rbx)
 
 		
 
 	ret
+
