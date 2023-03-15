@@ -32,7 +32,7 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 	playerY:		.quad	12
 	appleX:			.quad	159
 	appleY:			.quad 	23
-	direction:		.quad	1			#could be byte?
+	direction:		.quad	4			#could be byte?
 	snakeLenght:	.quad	1
 
 
@@ -70,7 +70,7 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 
 
 gameInit:
-	movq    $60000, %rdi            			# generate interupt every 33,333 ms, aka 30Hz
+	movq    $100000000, %rdi            			# generate interupt every 33,333 ms, aka 30Hz
     call    setTimer                			# call setTimer to load 30 Hz
     
 	snakeInit:
@@ -160,7 +160,7 @@ gameLoop:
 			subq	$1, playerX			# move LEFT 1 col
 			jmp		updateSnake
 		processRight:
-			addq	$1, playerY			# move RIGHT 1 col
+			addq	$1, playerX			# move RIGHT 1 col
 			jmp		updateSnake
 
 		updateSnake:							# update snake based on player movemnet
@@ -197,6 +197,42 @@ gameLoop:
 
 				movq	playerY, %rsi
 				movq    %rsi, (%rcx, %rbx)
+
+		
+			# todo lose conditions and emerge other side screen 
+
+		playerInput:
+			movq	direction, %r15		# save current direction
+
+			call	readKeyCode            
+			
+			cmpq	$upCode, %rax               
+			je      upPressed
+			cmpq	$downCode, %rax             
+			je      downPressed
+			cmpq	$leftCode, %rax             
+			je      leftPressed
+			cmpq	$rightCode, %rax            
+			je      rightPressed
+
+			jmp 	checkApple
+
+			upPressed:
+				movq	$up, direction
+				jmp		checkApple
+			downPressed:
+				movq	$down, direction
+				jmp		checkApple
+			leftPressed:
+				movq	$left, direction
+				jmp		checkApple
+			rightPressed:
+				movq	$right, direction
+				jmp		checkApple
+
+		checkApple:
+
+
 
 		
 
