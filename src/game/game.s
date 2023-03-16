@@ -16,7 +16,7 @@ GNU General Public License for more details.
 You should have received a copy of the GNU General Public License
 along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 */
-
+// https://www.youtube.com/watch?v=kZr8sR9Gwag
 .file "src/game/game.s"
 
 .global gameInit
@@ -25,15 +25,15 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 .section .game.data
 	#variables
 
-	SNAKEARRAY_X: 	.space 100         # memory space for the number table
-	SNAKEARRAY_Y: 	.space 100         # memory space for the number table
+	SNAKEARRAY_X: 	.space 1000         # memory space for the number table
+	SNAKEARRAY_Y: 	.space 1000         # memory space for the number table
 
-	playerX:		.quad	40
+	playerX:		.quad	70
 	playerY:		.quad	12
-	appleX:			.quad	159
-	appleY:			.quad 	23
+	appleX:			.quad	50
+	appleY:			.quad 	12
 	direction:		.quad	4			#could be byte?
-	snakeLenght:	.quad	1
+	snakeLenght:	.quad	2
 
 
 	score:          .quad 0x0               #initialize a score in memory to 0.
@@ -68,9 +68,8 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 	.equ    down, 0x3                      	# down arrow scan code
 
 
-
 gameInit:
-	movq    $100000000, %rdi            			# generate interupt every 33,333 ms, aka 30Hz
+	movq    $900000000, %rdi            		# generate interupt every 33,333 ms, aka 30Hz
     call    setTimer                			# call setTimer to load 30 Hz
     
 	snakeInit:
@@ -85,8 +84,16 @@ gameInit:
 		movq	playerY, %rsi
 		movq    %rsi, (%rcx, %rbx)
 
+		addq	$8, %rbx
+
+		movq    $71, (%rax, %rbx)
+		movq    $12, (%rcx, %rbx)
+
+
+
 gameLoop:
 	#clear screen every loop
+
 	movq    $VIDMEM, %rdi         					# start of VGA text memory
 	clearScreen:
 		movw 	$BGCOLOR, (%rdi)     			    
@@ -118,7 +125,7 @@ gameLoop:
 		movq    $VIDMEM, %rdi  				# reload vid mem
 
 		addq	$8, %rbx					# skip 8 bytes
-		subq	$1, %rcx					
+		subq	$1, %rcx					# loop counter -= 1					
 
 		cmpq	$0, %rcx
 		jg		drawSnakeLoop
@@ -148,7 +155,7 @@ gameLoop:
         cmpq    $down, %r15
         je      processDown
 
-		jmp 	updateSnake		
+		jmp 	playerInput			# bug?	
 
 		processUp:
 			subq	$1, playerY			# move UP 1 row
@@ -164,26 +171,28 @@ gameLoop:
 			jmp		updateSnake
 
 		updateSnake:							# update snake based on player movemnet
-			movq	$8, %rax
-			movq	snakeLenght, %rcx			
-			imul	%rcx						# each slot in the array is 8 bytes
-
-			movq	%rax, %rbx					# array counter
 			leaq    SNAKEARRAY_X(%rip), %r15   	# load address of SNAKEARRAY_X table into r15
 			leaq    SNAKEARRAY_Y(%rip), %r14   	# load address of SNAKEARRAY_Y table into r14
 
+			movq	snakeLenght, %rax
+			movq	$8, %rbx
+			imul	%rbx
+			movq	%rax, %rbx
+
+
 			updateSnakeBody:
-				movq	%rbx, %r13
-				subq	$8, %r13
+				subq	$8, %rbx
+				movq	(%r15,%rbx), %rax
+				addq	$8, %rbx
+				movq	%rax, (%r15,%rbx)
 
-				movq	(%r15, %r13), %rax		#X
-				movq	%rax,(%r15, %rbx)		
-
-				movq	(%r14, %r13), %rax		#Y
-				movq	%rax,(%r15, %rbx)			
 
 				subq	$8, %rbx
+				movq	(%r14,%rbx), %rax
+				addq	$8, %rbx
+				movq	%rax, (%r14,%rbx)
 
+				subq	$8, %rbx
 				cmpq	$0, %rbx
 				jg		updateSnakeBody
 
@@ -199,11 +208,34 @@ gameLoop:
 				movq    %rsi, (%rcx, %rbx)
 
 		
-			# todo lose conditions and emerge other side screen 
+			// snakeCollision:
+			// 	cmpq	$1, snakeLenght
+			// 	je		playerInput
 
+			// 	leaq    SNAKEARRAY_X(%rip), %r15   	# load address of SNAKEARRAY_X table into r15
+			// 	leaq    SNAKEARRAY_Y(%rip), %r14   	# load address of SNAKEARRAY_Y table into r14
+
+			// 	movq	$8, %rbx
+			// 	movq	snakeLenght, %rcx
+			// 	subq	$1, %rcx
+
+			// 	checkCollision:
+			// 		movq	playerX, %rax
+			// 		cmpq	(%r15, %rbx), %rax
+			// 		jne		nextElement
+					
+			// 		movq	playerY, %rax
+			// 		cmpq	(%r14, %rbx), %rax
+			// 		je 		gameOver
+
+			// 		nextElement:
+			// 			subq	$1, %rcx
+			// 			addq	$8, %rbx
+
+			// 			cmpq	$0, %rcx
+			// 			jg		checkCollision
+						
 		playerInput:
-			movq	direction, %r15		# save current direction
-
 			call	readKeyCode            
 			
 			cmpq	$upCode, %rax               
@@ -231,10 +263,38 @@ gameLoop:
 				jmp		checkApple
 
 		checkApple:
+			// movq	playerX, %rax
+			// movq	appleX, %rbx
+
+			// cmpq	%rax, %rbx
+			// jne		end
+
+			// movq	playerY, %rax
+			// movq	appleY, %rbx
+			
+			// cmpq	%rax, %rbx
+			// jne		end
+
+			// addq	$1, snakeLenght
+
+			// movq	$40, appleX
+			// movq	$12, appleY
+			// jmp		end
 
 
-
+	gameOver:
+		#implement game over
 		
+		
+	end:
+		// movq	snakeLenght, %rax
+		// movb	%al, %dl 
 
-	ret
+		// movq	$0, %rdi
+		// movq	$0, %rsi
+		// movb	$0x0f, %cl
+		// call	putChar
+		ret
+
+	
 
