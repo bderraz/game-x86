@@ -30,13 +30,13 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 
 	playerX:		.quad	70
 	playerY:		.quad	12
-	appleX:			.quad	50
+	appleX:			.quad	40
 	appleY:			.quad 	12
 	direction:		.quad	4			#could be byte?
 	snakeLenght:	.quad	3
 
-	score:          .quad 	0               #initialize a score in memory to 0.
-	highestScore:        .quad 	0               #add a place to save the highest achieved score.
+	score:          .quad 	0               #initialize a score
+	highestScore:   .quad 	0               #highest achieved score.
 	gameEnd:		.quad 	0
 
 
@@ -193,7 +193,7 @@ gameLoop:
 	jmp		moveSnake
 	checkGameEnd:
 		call	readKeyCode  
-		cmpq	$upCode, %rax               
+		cmpq	$resetCode, %rax               
 		je      resetGame
 		jmp		gameOver
 
@@ -350,8 +350,18 @@ gameLoop:
 			addq	$1, snakeLenght
 			addq	$1, score
 
-			movq	$40, appleX
-			movq	$12, appleY
+			rdtsc                          
+			movq    $0, %rdx                
+			movq    $SCREENW, %rcx                
+			divq    %rcx                    
+			movb    %dl, appleX              
+
+			rdtsc                           
+			movq    $0, %rdx                
+			movq    $SCREENH, %rcx                
+			divq    %rcx                    
+			movb    %dl, appleY              
+
 			jmp		end
 
 
@@ -379,6 +389,8 @@ gameLoop:
 		movq	$1, direction
 		movq	$70, playerX
 		movq	$12, playerY
+		movq	$40, appleX
+		movq	$12, appleY
 
 	end:
 		ret
