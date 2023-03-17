@@ -383,24 +383,22 @@ gameLoop:
 	end:
 		ret
 
-	displayNumber:  #this subroutine displays a number of %rsi digits, zero-extended ahead, starting at location %rdi in VGA memory. the number is stored in %rdx
-	movq    %rdx, %rax              #move the number into %rax to prepare for division
-	movq    $0, %rdx                #zero out %rdx
-	movq    $10, %r8                #move the divisor into a register
-	decq    %rsi                    #decrement %rsi to get the first character index
+	displayNumber:  
+	movq    %rdx, %rax              
+	movq    $0, %rdx                
+	movq    $10, %r8                
+	decq    %rsi                    
 
 	displayLoop:
-			divq    %r8                     #divide by 10
-			addb    $0x30, %dl              #add 0x30 to get the ascii code for the digit
-			movb    $0x0F, %dh              #move the color byte for white text on black background into %dh
-			movw    %dx, (%rdi, %rsi, 2)    #move the remainder byte and the color byte to VGA memory
+			divq    %r8                     
+			addb    $0x30, %dl             
+			movb    $0x0F, %dh              
+			movw    %dx, (%rdi, %rsi, 2)    
 
-			movq    $0, %rdx                #zero out %rdx again
-			decq    %rsi                    #decrement %rsi
+			movq    $0, %rdx                
+			decq    %rsi                    
 
-			cmpb    $0xFF, %sil             #compare %rsi to -1. it also can't be greater than 80, so the byte comparison works
-			jg      displayLoop             #if greater than, continue looping
-	
-	ret
-	
+			cmpb    $0xFF, %sil             
+			jg      displayLoop             
 
+			ret
