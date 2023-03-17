@@ -23,25 +23,24 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 .global gameLoop
 
 .section .game.data
-	#variables
-
-	SNAKEARRAY_X: 	.space 1000         # memory space for the number table
-	SNAKEARRAY_Y: 	.space 1000         # memory space for the number table
+	# VARIABELS
+	snakeArrayX: 	.space 1000         # memory space for the number table
+	snakeArrayY: 	.space 1000         # memory space for the number table
 
 	playerX:		.quad	70
 	playerY:		.quad	12
 	appleX:			.quad	40
 	appleY:			.quad 	12
-	direction:		.quad	4			#could be byte?
+	direction:		.quad	4			
 	snakeLenght:	.quad	3
 
-	score:          .quad 	0               #initialize a score
-	highestScore:   .quad 	0               #highest achieved score.
+	score:          .quad 	0           #initialize a score
+	highestScore:   .quad 	0         	#highest achieved score.
 	gameEnd:		.quad 	0
 
 
 .section .game.text
-	#constants
+	# CONSTANTS
 	.equ    VIDMEM, 0xB8000               		# start VGA text memory
 	.equ    VIDMEM_END, 0xB8FA0                 # VIDMEM + 4000 = VIDMEM_END (80x25 characters, occupying 2 bytes of memory so 80 x 25 x 2 = 4000 bytes)
 	.equ	SCREENW, 80							# 80 charcters wide
@@ -49,7 +48,7 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 	.equ	WINDCOND, 0xA						# win condition is 10 appels
 	
 	############################
-	.equ	BGCOLOR, 0x00						# word, 1 - blue background, 0 - black foreground, 20 - space
+	.equ	BGCOLOR, 0x0020						# word, 0 - black background, 0 - black foreground, 20 - space
 	.equ	APPLECCOLOR, 0x4020					# red apple
 	.equ	SNAKECOLOR, 0x2000					# green snake
 	.equ	TIMER, 0x04C						# counter
@@ -62,75 +61,73 @@ along with gamelib-x64. If not, see <http://www.gnu.org/licenses/>.
 	.equ	resetCode, 0x13
 
 	.equ	up, 0x0
-	.equ    left, 0x1                      		# left arrow scan code
-	.equ    right, 0x2                     		# right arrow scan code
-	.equ    down, 0x3                      		# down arrow scan code
+	.equ    left, 0x1                      		# left arrow code
+	.equ    right, 0x2                     		# right arrow code
+	.equ    down, 0x3                      		# down arrow code
 
 
 gameInit:
-	movq    $900000000, %rdi            		# generate interupt every 33,333 ms, aka 30Hz
-    call    setTimer                			# call setTimer to load 30 Hz
+	movq    $60000, %rdi            			# generate interupt 
+    call    setTimer                			# call setTimer to load interupt timing
     
 	snakeInit:
 		#init snake array
 		movq	$0, %rbx
-		leaq    SNAKEARRAY_X(%rip), %rax   		# load address of SNAKEARRAY_X table into rax
-		leaq    SNAKEARRAY_Y(%rip), %rcx   		# load address of SNAKEARRAY_Y table into rcx
+		leaq    snakeArrayX(%rip), %rax   		# load address of snakeArrayX table into rax
+		leaq    snakeArrayY(%rip), %rcx   		# load address of snakeArrayY table into rcx
 
-		movq	playerX, %rsi
+		movq	playerX, %rsi					# snake body
 		movq    %rsi, (%rax, %rbx)
 
 		movq	playerY, %rsi
 		movq    %rsi, (%rcx, %rbx)
 
 		addq	$8, %rbx
-
-		movq    $71, (%rax, %rbx)
+		movq    $71, (%rax, %rbx)				# snake first body part
 		movq    $12, (%rcx, %rbx)
 
 		addq	$8, %rbx
-
-		movq    $72, (%rax, %rbx)
+		movq    $72, (%rax, %rbx)				# snake second body part
 		movq    $12, (%rcx, %rbx)
 
 gameLoop:
 	#clear screen every loop
 
-	movq    $VIDMEM, %rdi         					# start of VGA text memory
+	movq    $VIDMEM, %rdi         				# start of VGA text memory
 	clearScreen:
 		movw 	$BGCOLOR, (%rdi)     			    
-		addq 	$2, %rdi          					# move to the next character, 2 bytes
-		cmpq 	$VIDMEM_END, %rdi     				# check if at the end of VGA text memory
+		addq 	$2, %rdi          				# move to the next character, 2 bytes
+		cmpq 	$VIDMEM_END, %rdi     			# check if at the end of VGA text memory
 		jl 		clearScreen
 
 	displayScore:
-		movq    $VIDMEM, %rdi        # move the board starting address to %rdi
-		movw    $0x0F53, (%rdi)      # display "S"
-		movw    $0x0F43, 2(%rdi)     # display "c"
-		movw    $0x0F4F, 4(%rdi)     # display "o"
-		movw    $0x0F52, 6(%rdi)     # display "r"
-		movw    $0x0F45, 8(%rdi)     # display "e"
-		movw    $0x0F3A, 10(%rdi)    # display space
+		movq    $VIDMEM, %rdi        	# move the board starting address to %rdi
+		movw    $0x0F53, (%rdi)      	# display "S"
+		movw    $0x0F43, 2(%rdi)     	# display "c"
+		movw    $0x0F4F, 4(%rdi)     	# display "o"
+		movw    $0x0F52, 6(%rdi)     	# display "r"
+		movw    $0x0F45, 8(%rdi)     	# display "e"
+		movw    $0x0F3A, 10(%rdi)    	# display space
 	
 		movq	score, %rdx
-		movq    $3, %rsi                #move the desired length of 9 into %rsi
-		addq	$12, %rdi
-		call 	displayNumber
+		movq    $2, %rsi              	# move the length of the number of 2 (3-1) into %rsi, this means max number we can display is 999
+		addq	$12, %rdi				# place we want to start displaying 
+		call 	showDigit
 
 	displayHighScore:
-		movq    $VIDMEM, %rdi        # move the board starting address to %rdi
+		movq    $VIDMEM, %rdi        
 		addq	$132, %rdi	
-		movw    $0x0F48, (%rdi)      # display "H"
-		movw    $0x0F69, 2(%rdi)     # display "i"
-		movw    $0x0F67, 4(%rdi)     # display "g"
-		movw    $0x0F68, 6(%rdi)     # display "h"
-		movw    $0x0F20, 8(%rdi)     # display space
-		movw    $0x0F53, 10(%rdi)    # display "S"
-		movw    $0x0F63, 12(%rdi)    # display "c"
-		movw    $0x0F6F, 14(%rdi)    # display "o"
-		movw    $0x0F72, 16(%rdi)    # display "r"
-		movw    $0x0F65, 18(%rdi)    # display "e"
-		movw    $0x0F3A, 20(%rdi)    # display space
+		movw    $0x0F48, (%rdi)      	# display "H"
+		movw    $0x0F69, 2(%rdi)     	# display "i"
+		movw    $0x0F67, 4(%rdi)     	# display "g"
+		movw    $0x0F68, 6(%rdi)    	# display "h"
+		movw    $0x0F20, 8(%rdi)     	# display space
+		movw    $0x0F53, 10(%rdi)   	# display "S"
+		movw    $0x0F63, 12(%rdi)   	# display "c"
+		movw    $0x0F6F, 14(%rdi)   	# display "o"
+		movw    $0x0F72, 16(%rdi)    	# display "r"
+		movw    $0x0F65, 18(%rdi)    	# display "e"
+		movw    $0x0F3A, 20(%rdi)    	# display space
 
 
 		movq	score, %r15
@@ -141,17 +138,17 @@ gameLoop:
 			movq	%r15, highestScore
 		else:
 			movq	highestScore, %rdx
-			movq    $3, %rsi                #move the desired length of 9 into %rsi
+			movq    $2, %rsi                
 			addq	$22, %rdi
-			call 	displayNumber
+			call 	showDigit
 
-	movq    $VIDMEM, %rdi         					# start of VGA text memory
+	movq    $VIDMEM, %rdi         			# start of VGA text memory
 	drawSnake:	
 		movq	$0, %rbx					# array counter
 		movq	snakeLenght, %rcx			# loop counter
 
-		leaq    SNAKEARRAY_X(%rip), %r15   	# load address of SNAKEARRAY_X table into r15
-		leaq    SNAKEARRAY_Y(%rip), %r14   	# load address of SNAKEARRAY_Y table into r14
+		leaq    snakeArrayX(%rip), %r15   	# load address of snakeArrayX table into r15
+		leaq    snakeArrayY(%rip), %r14   	# load address of snakeArrayY table into r14
 
 		drawSnakeLoop:
 		movq	(%r15, %rbx), %r13			#X
@@ -173,9 +170,10 @@ gameLoop:
 
 		cmpq	$0, %rcx
 		jg		drawSnakeLoop
+
 	drawApple:
-		movq    appleX, %r13   # load address of appleX table into r15
-		movq    appleY, %r12   # load address of appleY table into r15
+		movq    appleX, %r13   		# load address of appleX table into r15
+		movq    appleY, %r12   		# load address of appleY table into r15
 
 		movq	$160, %rax
 		imul	%r12
@@ -187,7 +185,7 @@ gameLoop:
 
 		movw 	$APPLECCOLOR, (%rdi)
 	
-
+	# display state of game, even after GameOver
 	cmpq	$1, gameEnd
 	je		checkGameEnd
 	jmp		moveSnake
@@ -196,7 +194,6 @@ gameLoop:
 		cmpq	$resetCode, %rax               
 		je      resetGame
 		jmp		gameOver
-
 
 	moveSnake:
 		movq	direction, %r15		# move current direction to r15
@@ -210,7 +207,7 @@ gameLoop:
         cmpq    $down, %r15
         je      processDown
 
-		jmp 	playerInput			# bug?	
+		jmp 	playerInput		
 
 		processUp:
 			subq	$1, playerY			# move UP 1 row
@@ -226,8 +223,8 @@ gameLoop:
 			jmp		updateSnake
 
 		updateSnake:							# update snake based on player movemnet
-			leaq    SNAKEARRAY_X(%rip), %r15   	# load address of SNAKEARRAY_X table into r15
-			leaq    SNAKEARRAY_Y(%rip), %r14   	# load address of SNAKEARRAY_Y table into r14
+			leaq    snakeArrayX(%rip), %r15   	# load address of snakeArrayX table into r15
+			leaq    snakeArrayY(%rip), %r14   	# load address of snakeArrayY table into r14
 
 			movq	snakeLenght, %rax
 			movq	$8, %rbx
@@ -253,8 +250,8 @@ gameLoop:
 
 			updateSnakeHead:
 				movq	$0, %rbx
-				leaq    SNAKEARRAY_X(%rip), %rax   # load address of SNAKEARRAY_X table into rax
-				leaq    SNAKEARRAY_Y(%rip), %rcx   # load address of SNAKEARRAY_Y table into rcx
+				leaq    snakeArrayX(%rip), %rax   # load address of snakeArrayX table into rax
+				leaq    snakeArrayY(%rip), %rcx   # load address of snakeArrayY table into rcx
 
 				movq	playerX, %rsi
 				movq    %rsi, (%rax, %rbx)
@@ -284,23 +281,23 @@ gameLoop:
 				cmpq	$1, snakeLenght
 				je		playerInput
 
-				leaq    SNAKEARRAY_X(%rip), %r15   	# load address of SNAKEARRAY_X table into r15
-				leaq    SNAKEARRAY_Y(%rip), %r14   	# load address of SNAKEARRAY_Y table into r14
+				leaq    snakeArrayX(%rip), %r15   	# load address of snakeArrayX table into r15
+				leaq    snakeArrayY(%rip), %r14   	# load address of snakeArrayY table into r14
 
 				movq	$8, %rbx					# array counter
 				movq	snakeLenght, %rcx			# loop counter
 				subq	$1, %rcx
 
 				checkCollision:
-					movq	playerX, %rax
+					movq	playerX, %rax			# comapre X value Snakehead with body
 					cmpq	(%r15, %rbx), %rax
-					jne		nextElement
+					jne		getNextElement
 					
-					movq	playerY, %rax
+					movq	playerY, %rax			# comapre Y value Snakehead with body
 					cmpq	(%r14, %rbx), %rax
 					je 		gameOver
 
-					nextElement:
+					getNextElement:					# get next body element
 						addq	$8, %rbx
 						subq	$1, %rcx
 
@@ -350,11 +347,11 @@ gameLoop:
 			addq	$1, snakeLenght
 			addq	$1, score
 
-			rdtsc                          
+			rdtsc                          		# generate random apple
 			movq    $0, %rdx                
 			movq    $SCREENW, %rcx                
 			divq    %rcx                    
-			movb    %dl, appleX              
+			movb    %dl, appleX              	# remainder between 0-79, new X value
 
 			rdtsc                           
 			movq    $0, %rdx                
@@ -364,13 +361,12 @@ gameLoop:
 
 			jmp		end
 
-
 	gameOver:
 		movq	$1, gameEnd
 
-		movq    $VIDMEM, %rdi       	#move the board starting address to %rdi
+		movq    $VIDMEM, %rdi       		#move the board starting address to %rdi
         addq    $1990, %rdi
-        movw    $0x0F47, (%rdi)         #display "GAME"
+        movw    $0x0F47, (%rdi)         	#display "GAME"
         movw    $0x0F41, 2(%rdi)
         movw    $0x0F4D, 4(%rdi)
         movw    $0x0F45, 6(%rdi)
@@ -395,22 +391,22 @@ gameLoop:
 	end:
 		ret
 
-	displayNumber:  
-	movq    %rdx, %rax              
-	movq    $0, %rdx                
-	movq    $10, %r8                
-	decq    %rsi                    
+	# This function converts the number to a string of ASCII characters and stores it in the output buffer.
+	showDigit:
+		movq %rdx, %rax     # move the number to be displayed into %rax
+		xorq %rdx, %rdx     # clear %rdx, which will be used for the remainder
 
-	displayLoop:
-			divq    %r8                     
-			addb    $0x30, %dl             
-			movb    $0x0F, %dh              
-			movw    %dx, (%rdi, %rsi, 2)    
+		movq $10, %rbx      # move the value 10 into %rbx, which will be used for division
 
-			movq    $0, %rdx                
-			decq    %rsi                    
+	showDigitLoop:      					
+			divq    %rbx     					# divide %rax by 10, remainder is stored in %rdx
+			addw    $0x0F30, %dx 				# convert remainder to ASCII digit	
+			movw    %dx, (%rdi, %rsi, 2) 		# write the display character to memory using the current index
 
-			cmpb    $0xFF, %sil             
-			jg      displayLoop             
+			xorq    %rdx, %rdx   				# clear %rdx again for the next division
+			subq    $1, %rsi       				# decrement the index
+			cmpb    $0xFF, %sil  				# compare the lower byte of the index to 0xFF (255)
+			jg      showDigitLoop  			    # if the index is greater than 255, continue the loop
 
-			ret
+			ret   			
+
